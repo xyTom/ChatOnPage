@@ -14,30 +14,32 @@ const PROVIDER_OPTIONS: { value: Provider; label: string; description: string }[
   {
     value: 'perplexity',
     label: 'Perplexity',
-    description: '默认推荐，支持直接解析长文 URL 并快速生成总结。',
+    description: 'Recommended default that parses long-form URLs and quickly generates summaries.',
   },
   {
     value: 'chatgpt',
     label: 'ChatGPT',
-    description: '适合自由提问，支持将选中文本或页面信息直接带入对话。',
+    description:
+      'Great for freeform questions and can send selected text or page details directly into the chat.',
   },
   {
     value: 'claude',
     label: 'Claude',
-    description: '强调长文理解与分析，在复杂问题场景表现稳定。',
+    description:
+      'Emphasizes long-form comprehension and analysis with consistent performance in complex scenarios.',
   },
 ];
 
 const OPEN_MODE_OPTIONS: { value: OpenMode; label: string; description: string }[] = [
   {
     value: 'popup',
-    label: '弹出窗口（960×800）',
-    description: '在独立的小窗中打开 AI 工具，保持当前页面可见。',
+    label: 'Popup window (960×800)',
+    description: 'Open the AI tool in a standalone popup while keeping the current page visible.',
   },
   {
     value: 'tab',
-    label: '新标签页',
-    description: '在当前窗口中新开标签页进行提问。',
+    label: 'New tab',
+    description: 'Open a new tab in the current window to ask your question.',
   },
 ];
 
@@ -66,7 +68,7 @@ function App() {
         console.error('Failed to load settings', error);
         if (!mounted) return;
         setStatus('error');
-        setErrorMessage('加载设置失败，请刷新页面后重试。');
+        setErrorMessage('Failed to load settings. Refresh the page and try again.');
       }
     };
 
@@ -102,19 +104,19 @@ function App() {
     } catch (error) {
       console.error('Failed to save settings', error);
       setStatus('error');
-      setErrorMessage('保存失败，请稍后重试。');
+      setErrorMessage('Failed to save. Please try again later.');
     }
   };
 
   const renderStatus = () => {
     if (status === 'idle') return null;
     if (status === 'saving') {
-      return <p className="status saving">正在保存…</p>;
+      return <p className="status saving">Saving…</p>;
     }
     if (status === 'saved') {
-      return <p className="status saved">已保存</p>;
+      return <p className="status saved">Saved</p>;
     }
-    return <p className="status error">{errorMessage || '发生未知错误'}</p>;
+    return <p className="status error">{errorMessage || 'An unknown error occurred'}</p>;
   };
 
   return (
@@ -122,15 +124,15 @@ function App() {
       <header className="header">
         <div>
           <h1>ChatOnPage</h1>
-          <p>配置默认的 AI Provider 与打开方式。</p>
+          <p>Configure the default AI provider and how it opens.</p>
         </div>
       </header>
 
       {settings ? (
         <>
           <section className="section">
-            <h2>默认 Provider</h2>
-            <p className="section-hint">选择用于一键提问时打开的 AI 工具。</p>
+            <h2>Default provider</h2>
+            <p className="section-hint">Choose the AI tool that opens when you ask with one click.</p>
             <div className="option-list">
               {PROVIDER_OPTIONS.map((option) => {
                 const checked = settings.provider === option.value;
@@ -157,8 +159,8 @@ function App() {
           </section>
 
           <section className="section">
-            <h2>打开方式</h2>
-            <p className="section-hint">决定打开 Provider 时是在弹窗还是新标签页中展示。</p>
+            <h2>Open mode</h2>
+            <p className="section-hint">Decide whether the provider opens in a popup or a new tab.</p>
             <div className="option-list">
               {OPEN_MODE_OPTIONS.map((option) => {
                 const checked = settings.openMode === option.value;
@@ -185,7 +187,7 @@ function App() {
           </section>
         </>
       ) : (
-        <div className="loading">正在加载设置…</div>
+        <div className="loading">Loading settings…</div>
       )}
 
       {renderStatus()}

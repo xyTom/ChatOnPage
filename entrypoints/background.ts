@@ -108,7 +108,7 @@ export default defineBackground(() => {
 async function handleTrigger(tab: BrowserTab | undefined, action: Action = 'summary') {
   const activeTab = tab?.id !== undefined ? tab : await getActiveTab();
   if (!activeTab?.id) {
-    await notifyFailure('无法获取当前页面信息，请重试。');
+    await notifyFailure('Unable to get the current page information. Please try again.');
     return;
   }
 
@@ -139,7 +139,7 @@ async function handleTrigger(tab: BrowserTab | undefined, action: Action = 'summ
     await openProvider(targetUrl, settings.openMode);
   } catch (error) {
     console.error('Failed to open provider window', error);
-    await notifyFailure('打开失败，请重试或切换 Provider');
+    await notifyFailure('Failed to open. Please try again or switch the provider.');
   }
 }
 
@@ -389,7 +389,7 @@ async function setupContextMenus() {
       await browser.contextMenus.remove(id);
     } catch (error) {
       if (!isIgnorableContextMenuError(error)) {
-        console.warn('Failed to remove context menu', id, error);
+        console.warn('Failed to remove context menu', id, error as any);
       }
     }
   }
