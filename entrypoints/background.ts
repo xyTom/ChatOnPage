@@ -201,7 +201,10 @@ function buildProviderUrl(
       if (context.selectionIsShort) {
         payload = context.selection;
       } else if (context.pageIsLong) {
-        payload = context.pageUrl ?? (context.truncatedSelection || null);
+        payload = context.pageUrl ?? context.truncatedSelection;
+        if (!payload && context.title) {
+          payload = `请总结：${context.title}`;
+        }
       } else if (context.pageUrl) {
         payload = context.title
           ? `请总结：${context.title} ${context.pageUrl}`
