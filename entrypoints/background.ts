@@ -80,7 +80,7 @@ export default defineBackground(() => {
 async function handleTrigger(tab?: BrowserTab) {
   const activeTab = tab?.id !== undefined ? tab : await getActiveTab();
   if (!activeTab?.id) {
-    await notifyFailure('无法获取当前页面信息，请重试。');
+    await notifyFailure('Unable to get the current page information. Please try again.');
     return;
   }
 
@@ -89,7 +89,7 @@ async function handleTrigger(tab?: BrowserTab) {
   const targetUrl = buildProviderUrl(pageInfo, activeTab, settings.provider);
 
   if (!targetUrl) {
-    await notifyFailure('无法获取页面 URL，请重试。');
+    await notifyFailure('Unable to fetch the page URL. Please try again.');
     return;
   }
 
@@ -97,7 +97,7 @@ async function handleTrigger(tab?: BrowserTab) {
     await openProvider(targetUrl, settings.openMode);
   } catch (error) {
     console.error('Failed to open provider window', error);
-    await notifyFailure('打开失败，请重试或切换 Provider');
+    await notifyFailure('Failed to open. Please try again or switch the provider.');
   }
 }
 
@@ -171,7 +171,9 @@ function buildProviderUrl(
   } else {
     const title =
       (extractionSucceeded && pageInfo ? pageInfo.title : undefined) ?? tab.title ?? '';
-    payload = title ? `请总结：${title} ${pageUrl}` : `请总结：${pageUrl}`;
+    payload = title
+      ? `Please summarize: ${title} ${pageUrl}`
+      : `Please summarize: ${pageUrl}`;
   }
 
   return `${baseUrl}${encodeURIComponent(payload)}`;
@@ -240,7 +242,7 @@ async function setupContextMenus() {
   }
 
   const settings = await getSettings();
-  const title = `ChatOnPage：使用 ${PROVIDER_LABELS[settings.provider]} 提问`;
+  const title = `ChatOnPage: Ask with ${PROVIDER_LABELS[settings.provider]}`;
 
   try {
     await browser.contextMenus.create({
