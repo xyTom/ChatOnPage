@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <style>
+      .stroke { stroke: #4f6378; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+    </style>
+  </defs>
+  <rect x="22" y="22" width="84" height="70" rx="12" class="stroke" />
+  <line x1="28" y1="42" x2="100" y2="42" class="stroke" />
+  <path d="M40 60h48a10 10 0 0 1 10 10v18a10 10 0 0 1-10 10H62l-8 12-4-12H40a10 10 0 0 1-10-10V70a10 10 0 0 1 10-10z" class="stroke" />
+  <path d="M54 98l12-32 12 32" class="stroke" />
+  <line x1="58" y1="88" x2="70" y2="88" class="stroke" />
+  <line x1="84" y1="66" x2="84" y2="100" class="stroke" />
+  <line x1="76" y1="66" x2="92" y2="66" class="stroke" />
+  <line x1="76" y1="100" x2="92" y2="100" class="stroke" />
+</svg>
