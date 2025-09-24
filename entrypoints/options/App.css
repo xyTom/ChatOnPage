@@ -1,0 +1,177 @@
+.options {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 32px 24px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  box-sizing: border-box;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 1.75rem;
+  color: #111827;
+}
+
+.header p {
+  margin: 4px 0 0;
+  color: #4b5563;
+}
+
+.section {
+  background-color: #ffffff;
+  border-radius: 16px;
+  padding: 20px 24px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  border: 1px solid rgba(15, 23, 42, 0.05);
+}
+
+.section h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #111827;
+}
+
+.section-hint {
+  margin: 8px 0 16px;
+  color: #6b7280;
+  font-size: 0.95rem;
+}
+
+.option-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.option-card {
+  display: flex;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.6);
+  background-color: #f9fafb;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+  cursor: pointer;
+}
+
+.option-card:hover {
+  border-color: #2563eb;
+}
+
+.option-card.selected {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+  background-color: #ffffff;
+}
+
+.option-card input {
+  margin: 4px 0 0;
+}
+
+.option-title {
+  display: block;
+  font-weight: 600;
+  color: #111827;
+}
+
+.option-description {
+  display: block;
+  margin-top: 4px;
+  color: #4b5563;
+  font-size: 0.9rem;
+}
+
+.loading {
+  padding: 24px;
+  text-align: center;
+  color: #4b5563;
+  background-color: #ffffff;
+  border-radius: 16px;
+  border: 1px solid rgba(15, 23, 42, 0.05);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+}
+
+.status {
+  font-size: 0.95rem;
+  margin: -8px 0 0;
+}
+
+.status.saving {
+  color: #2563eb;
+}
+
+.status.saved {
+  color: #047857;
+}
+
+.status.error {
+  color: #b91c1c;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    background-color: #111827;
+    color: #f9fafb;
+  }
+
+  .options {
+    color: inherit;
+  }
+
+  .header h1 {
+    color: inherit;
+  }
+
+  .header p {
+    color: #cbd5f5;
+  }
+
+  .section {
+    background-color: #1f2937;
+    border-color: rgba(99, 102, 241, 0.35);
+    box-shadow: none;
+  }
+
+  .section-hint {
+    color: #9ca3af;
+  }
+
+  .option-card {
+    background-color: #111827;
+    border-color: rgba(99, 102, 241, 0.25);
+  }
+
+  .option-card.selected {
+    background-color: #1f2937;
+    border-color: #60a5fa;
+    box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.3);
+  }
+
+  .option-title {
+    color: #f9fafb;
+  }
+
+  .option-description {
+    color: #d1d5db;
+  }
+
+  .loading {
+    background-color: #1f2937;
+    border-color: rgba(99, 102, 241, 0.35);
+    color: #e5e7eb;
+  }
+
+  .status.saved {
+    color: #34d399;
+  }
+
+  .status.saving {
+    color: #60a5fa;
+  }
+
+  .status.error {
+    color: #f87171;
+  }
+}
