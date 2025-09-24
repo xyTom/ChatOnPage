@@ -60,9 +60,15 @@ const DEFAULT_SETTINGS: Settings = {
   openMode: 'popup',
 };
 
+// Serialize context menu setup calls to avoid duplicate IDs from overlapping runs
+let setupContextMenusChain: Promise<void> = Promise.resolve();
+
 export default defineBackground(() => {
-  void ensureDefaultSettings();
-  void setupContextMenus();
+  // Initialize sequentially to avoid racing menu creation
+  void (async () => {
+    await ensureDefaultSettings();
+    await setupContextMenus();
+  })();
 
   browser.action.onClicked.addListener((tab) => {
     void handleTrigger(tab, 'summary');
@@ -131,7 +137,7 @@ async function handleTrigger(tab: BrowserTab | undefined, action: Action = 'summ
   const targetUrl = buildProviderUrl(pageInfo, activeTab, settings.provider, action, extras);
 
   if (!targetUrl) {
-    await notifyFailure('无法生成提问内容，请重试。');
+    await notifyFailure('Unable to generate the question. Please try again.');
     return;
   }
 
@@ -203,16 +209,16 @@ function buildProviderUrl(
       } else if (context.pageIsLong) {
         payload = context.pageUrl ?? context.truncatedSelection;
         if (!payload && context.title) {
-          payload = `请总结：${context.title}`;
+          payload = `Summarize: ${context.title}`;
         }
       } else if (context.pageUrl) {
         payload = context.title
-          ? `请总结：${context.title} ${context.pageUrl}`
-          : `请总结：${context.pageUrl}`;
+          ? `Summarize this page: ${context.title} ${context.pageUrl}`
+          : `Summarize this page: ${context.pageUrl}`;
       } else if (context.truncatedSelection) {
         payload = context.truncatedSelection;
       } else if (context.title) {
-        payload = `请总结：${context.title}`;
+        payload = `Summarize: ${context.title}`;
       }
       break;
     case 'translate': {
@@ -223,29 +229,29 @@ function buildProviderUrl(
       const languageLabel = language.displayName || language.code;
 
       if (context.selectionIsShort) {
-        payload = `请将以下内容翻译为${languageLabel}：${context.selection}`;
+        payload = `Translate the following into ${languageLabel}: ${context.selection}`;
       } else if (context.pageUrl) {
-        payload = `请将此网页翻译为${languageLabel}：${context.pageUrl}`;
+        payload = `Translate this page into ${languageLabel}: ${context.pageUrl}`;
       } else if (context.hasSelection) {
-        payload = `请将以下内容翻译为${languageLabel}（内容较长，已截取部分）：${context.truncatedSelection}`;
+        payload = `Translate the following into ${languageLabel} (long content; partial excerpt): ${context.truncatedSelection}`;
       } else if (context.title) {
-        payload = `请将与「${context.title}」相关的内容翻译为${languageLabel}。`;
+        payload = `Translate content related to "${context.title}" into ${languageLabel}.`;
       } else {
-        payload = `请翻译为${languageLabel}。`;
+        payload = `Translate into ${languageLabel}.`;
       }
       break;
     }
     case 'rewrite':
       if (context.selectionIsShort) {
-        payload = `请改写并润色以下内容：${context.selection}`;
+        payload = `Rewrite and polish the following: ${context.selection}`;
       } else if (context.pageUrl) {
         payload = context.title
-          ? `请阅读网页「${context.title}」并对其核心内容进行改写和润色：${context.pageUrl}`
-          : `请对以下网页的核心内容进行改写和润色：${context.pageUrl}`;
+          ? `Read the page "${context.title}" and rewrite/polish its key content: ${context.pageUrl}`
+          : `Rewrite and polish the key content of this page: ${context.pageUrl}`;
       } else if (context.hasSelection) {
-        payload = `请改写并润色以下内容（内容较长，已截取部分）：${context.truncatedSelection}`;
+        payload = `Rewrite and polish the following (long content; partial excerpt): ${context.truncatedSelection}`;
       } else if (context.title) {
-        payload = `请改写并润色与「${context.title}」相关的内容。`;
+        payload = `Rewrite and polish content related to "${context.title}".`;
       }
       break;
     case 'followup': {
@@ -255,15 +261,15 @@ function buildProviderUrl(
       }
 
       if (context.selectionIsShort) {
-        payload = `以下是相关内容：${context.selection}\n请基于上述内容回答我的追问：${question}`;
+        payload = `Here is relevant content: ${context.selection}\nPlease answer my follow-up question based on it: ${question}`;
       } else if (context.pageUrl) {
         payload = context.title
-          ? `网页「${context.title}」：${context.pageUrl}\n请结合该网页回答我的追问：${question}`
-          : `网页：${context.pageUrl}\n请结合该网页回答我的追问：${question}`;
+          ? `Page "${context.title}": ${context.pageUrl}\nPlease answer my follow-up question based on this page: ${question}`
+          : `Page: ${context.pageUrl}\nPlease answer my follow-up question based on this page: ${question}`;
       } else if (context.hasSelection) {
-        payload = `以下是相关内容（内容较长，已截取部分）：${context.truncatedSelection}\n请基于上述内容回答我的追问：${question}`;
+        payload = `Here is relevant content (long content; partial excerpt): ${context.truncatedSelection}\nPlease answer my follow-up question based on it: ${question}`;
       } else if (context.title) {
-        payload = `请结合与「${context.title}」相关的信息回答我的追问：${question}`;
+        payload = `Please answer my follow-up question using information related to "${context.title}": ${question}`;
       } else {
         payload = question;
       }
@@ -376,67 +382,82 @@ async function getSettings(): Promise<Settings> {
 }
 
 async function setupContextMenus() {
-  const idsToRemove = [
-    CONTEXT_MENU_FOLLOWUP_ID,
-    CONTEXT_MENU_REWRITE_ID,
-    CONTEXT_MENU_TRANSLATE_ID,
-    CONTEXT_MENU_SUMMARY_ID,
-    CONTEXT_MENU_ROOT_ID,
-  ];
+  const run = async () => {
+    const idsToRemove = [
+      CONTEXT_MENU_FOLLOWUP_ID,
+      CONTEXT_MENU_REWRITE_ID,
+      CONTEXT_MENU_TRANSLATE_ID,
+      CONTEXT_MENU_SUMMARY_ID,
+      CONTEXT_MENU_ROOT_ID,
+    ];
 
-  for (const id of idsToRemove) {
-    try {
-      await browser.contextMenus.remove(id);
-    } catch (error) {
-      if (!isIgnorableContextMenuError(error)) {
-        console.warn('Failed to remove context menu', id, error as any);
+    for (const id of idsToRemove) {
+      try {
+        await browser.contextMenus.remove(id);
+      } catch (error) {
+        if (!isIgnorableContextMenuError(error)) {
+          console.warn('Failed to remove context menu', id, error as any);
+        }
       }
     }
-  }
 
-  const settings = await getSettings();
-  const language = getPreferredUILanguage();
-  const rootTitle = `ChatOnPage：使用 ${PROVIDER_LABELS[settings.provider]} 提问`;
-  const translationLabel = formatLanguageMenuLabel(language);
+    const settings = await getSettings();
+    const language = getPreferredUILanguage();
+    const rootTitle = `ChatOnPage: Ask with ${PROVIDER_LABELS[settings.provider]}`;
+    const translationLabel = formatLanguageMenuLabel(language);
 
-  try {
-    await browser.contextMenus.create({
-      id: CONTEXT_MENU_ROOT_ID,
-      title: rootTitle,
-      contexts: ['selection', 'page'],
-      enabled: false,
-    });
+    try {
+      await browser.contextMenus.create({
+        id: CONTEXT_MENU_ROOT_ID,
+        title: rootTitle,
+        contexts: ['selection', 'page'],
+        // Keep root enabled so its submenu can be opened
+        // (a disabled parent prevents expanding children in some browsers)
+      });
 
-    await browser.contextMenus.create({
-      id: CONTEXT_MENU_SUMMARY_ID,
-      parentId: CONTEXT_MENU_ROOT_ID,
-      title: '总结当前内容',
-      contexts: ['selection', 'page'],
-    });
+      await browser.contextMenus.create({
+        id: CONTEXT_MENU_SUMMARY_ID,
+        parentId: CONTEXT_MENU_ROOT_ID,
+        title: 'Summarize this content',
+        contexts: ['selection', 'page'],
+      });
 
-    await browser.contextMenus.create({
-      id: CONTEXT_MENU_TRANSLATE_ID,
-      parentId: CONTEXT_MENU_ROOT_ID,
-      title: `翻译成 ${translationLabel}（系统语言）`,
-      contexts: ['selection', 'page'],
-    });
+      await browser.contextMenus.create({
+        id: CONTEXT_MENU_TRANSLATE_ID,
+        parentId: CONTEXT_MENU_ROOT_ID,
+        title: `Translate to ${translationLabel} (system language)`,
+        contexts: ['selection', 'page'],
+      });
 
-    await browser.contextMenus.create({
-      id: CONTEXT_MENU_REWRITE_ID,
-      parentId: CONTEXT_MENU_ROOT_ID,
-      title: '改写与润色',
-      contexts: ['selection', 'page'],
-    });
+      await browser.contextMenus.create({
+        id: CONTEXT_MENU_REWRITE_ID,
+        parentId: CONTEXT_MENU_ROOT_ID,
+        title: 'Rewrite & polish',
+        contexts: ['selection', 'page'],
+      });
 
-    await browser.contextMenus.create({
-      id: CONTEXT_MENU_FOLLOWUP_ID,
-      parentId: CONTEXT_MENU_ROOT_ID,
-      title: '输入追问问题…',
-      contexts: ['selection', 'page'],
-    });
-  } catch (error) {
-    console.error('Failed to create context menus', error);
-  }
+      await browser.contextMenus.create({
+        id: CONTEXT_MENU_FOLLOWUP_ID,
+        parentId: CONTEXT_MENU_ROOT_ID,
+        title: 'Ask a follow-up…',
+        contexts: ['selection', 'page'],
+      });
+    } catch (error) {
+      const message = (error && typeof error === 'object' && 'message' in error)
+        ? String((error as { message?: string }).message)
+        : '';
+      if (message.includes('duplicate id')) {
+        // Another instance likely created menus concurrently; safe to ignore
+        console.warn('Context menus already exist; skipping duplicate creation');
+      } else {
+        console.error('Failed to create context menus', error);
+      }
+    }
+  };
+
+  // Chain to avoid overlapping executions which cause duplicate IDs
+  setupContextMenusChain = setupContextMenusChain.then(run, run);
+  await setupContextMenusChain;
 }
 
 function isIgnorableContextMenuError(error: unknown): boolean {
@@ -481,7 +502,7 @@ function formatLanguageMenuLabel(language: LanguageInfo): string {
   const code = language.code.trim();
   const name = language.displayName.trim();
   if (!name && !code) {
-    return '系统语言';
+    return 'System language';
   }
   if (!name) {
     return code;
@@ -489,7 +510,7 @@ function formatLanguageMenuLabel(language: LanguageInfo): string {
   if (!code) {
     return name;
   }
-  return name.toLowerCase() === code.toLowerCase() ? name : `${name}（${code}）`;
+  return name.toLowerCase() === code.toLowerCase() ? name : `${name} (${code})`;
 }
 
 async function requestFollowupQuestion(tabId: number): Promise<string | null> {
@@ -556,19 +577,19 @@ function showFollowupPrompt(): Promise<string | null> {
     container.style.lineHeight = '1.55';
 
     const title = document.createElement('h2');
-    title.textContent = '输入追问问题';
+    title.textContent = 'Enter follow-up question';
     title.style.margin = '0 0 12px 0';
     title.style.fontSize = '18px';
     title.style.fontWeight = '600';
 
     const description = document.createElement('p');
-    description.textContent = '请输入想要继续追问的问题（按 Ctrl/⌘ + Enter 快速提交）。';
+    description.textContent = 'Enter your follow-up question (press Ctrl/⌘ + Enter to submit).';
     description.style.margin = '0 0 16px 0';
     description.style.fontSize = '14px';
     description.style.color = '#475569';
 
     const textarea = document.createElement('textarea');
-    textarea.placeholder = '例如：请进一步解释其中的第二个观点。';
+    textarea.placeholder = 'Example: Please elaborate on the second point.';
     textarea.style.width = '100%';
     textarea.style.minHeight = '112px';
     textarea.style.resize = 'vertical';
@@ -603,7 +624,7 @@ function showFollowupPrompt(): Promise<string | null> {
 
     const cancelButton = document.createElement('button');
     cancelButton.type = 'button';
-    cancelButton.textContent = '取消';
+    cancelButton.textContent = 'Cancel';
     cancelButton.style.padding = '8px 16px';
     cancelButton.style.fontSize = '14px';
     cancelButton.style.borderRadius = '999px';
@@ -614,7 +635,7 @@ function showFollowupPrompt(): Promise<string | null> {
 
     const submitButton = document.createElement('button');
     submitButton.type = 'button';
-    submitButton.textContent = '发送';
+    submitButton.textContent = 'Send';
     submitButton.style.padding = '8px 18px';
     submitButton.style.fontSize = '14px';
     submitButton.style.borderRadius = '999px';
