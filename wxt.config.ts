@@ -12,6 +12,7 @@ export default defineConfig({
     permissions: ['activeTab', 'scripting', 'contextMenus', 'tabs', 'storage', 'notifications'],
     action: {
       default_title: 'ChatOnPage: Ask AI about this page',
+      default_popup: 'popup/index.html',
     },
     commands: {
       [COMMAND_ID]: {
